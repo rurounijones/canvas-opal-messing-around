@@ -18,30 +18,44 @@ class Map
     Element.find("##{canvas_id}").on :mousedown do |event|
       @drag_start_x = event[:clientX] - `#{rect}.left`
       @drag_start_y = event[:clientY] - `#{rect}.top`
+      @dragging = true
     end
+    Element.find("##{canvas_id}").on :mousemove do |event|
+
+      if @dragging
+        drag_end_x = event[:clientX] - `#{rect}.left`
+        drag_end_y = event[:clientY] - `#{rect}.top`
+
+
+        x_arr = [@drag_start_x, drag_end_x]
+        x_diff = (x_arr.min..x_arr.max).size
+
+        y_arr = [@drag_start_y, drag_end_y]
+        y_diff = (y_arr.min..y_arr.max).size
+
+        if drag_end_x > @drag_start_x
+          @x = @x + x_diff
+        elsif drag_end_x < @drag_start_x
+          @x = @x - x_diff
+        end
+
+        if drag_end_y < @drag_start_y
+          @y = @y + y_diff
+        elsif drag_end_x > @drag_start_y
+          @y = @y - y_diff
+        end
+        @drag_start_x = drag_end_x
+        @drag_start_y = drag_end_y
+        draw_planets
+      end
+    end
+
     Element.find("##{canvas_id}").on :mouseup do |event|
-      drag_end_x = event[:clientX] - `#{rect}.left`
-      drag_end_y = event[:clientY] - `#{rect}.top`
+      @dragging = false
+    end
 
-
-      x_arr = [@drag_start_x, drag_end_x]
-      x_diff = (x_arr.min..x_arr.max).size
-
-      y_arr = [@drag_start_y, drag_end_y]
-      y_diff = (y_arr.min..y_arr.max).size
-
-      if drag_end_x > @drag_start_x
-        @x = @x + x_diff
-      elsif drag_end_x < @drag_start_x
-        @x = @x - x_diff
-      end
-
-      if drag_end_y < @drag_start_y
-        @y = @y + y_diff
-      elsif drag_end_x > @drag_start_y
-        @y = @y - y_diff
-      end
-      draw_planets
+    Element.find("##{canvas_id}").on :mouseout do |event|
+      @dragging = false
     end
 
   end
