@@ -2,85 +2,102 @@ require 'opal'
 require 'opal-jquery'
 require 'systems'
 
-class Grid
-  attr_reader :height, :width, :canvas, :context, :max_x, :max_y
-
-  CELL_HEIGHT = 4;
-  CELL_WIDTH  = 4;
+class Map
+  attr_reader :height, :width, :canvas, :context, :x, :y, :dragging
 
   def initialize
-    @height  = `$(window).height()`
-    @width   = `$(window).width()`
-    @height  = `4000`
-    @width   = `4000`
+    @width   = `800`
+    @height  = `500`
     @canvas  = `document.getElementById(#{canvas_id})`
     @context = `#{canvas}.getContext('2d')`
-    @max_x   = (height / CELL_HEIGHT).floor
-    @max_y   = (width / CELL_WIDTH).floor
+    @x = @width / 2
+    @y = (@height / 2) * -1.0
+    @draging = false
+    @drag_start_x = 0
+    @drag_start_y = 0
+    Element.find("##{canvas_id}").on :mousedown do |event|
+      @drag_start_x = event[:clientX] - `#{rect}.left`
+      @drag_start_y = event[:clientY] - `#{rect}.top`
+    end
+    Element.find("##{canvas_id}").on :mouseup do |event|
+      drag_end_x = event[:clientX] - `#{rect}.left`
+      drag_end_y = event[:clientY] - `#{rect}.top`
+
+
+      x_arr = [@drag_start_x, drag_end_x]
+      x_diff = (x_arr.min..x_arr.max).size
+
+      y_arr = [@drag_start_y, drag_end_y]
+      y_diff = (y_arr.min..y_arr.max).size
+
+      if drag_end_x > @drag_start_x
+        @x = @x + x_diff
+      elsif drag_end_x < @drag_start_x
+        @x = @x - x_diff
+      end
+
+      if drag_end_y < @drag_start_y
+        @y = @y + y_diff
+      elsif drag_end_x > @drag_start_y
+        @y = @y - y_diff
+      end
+      draw_planets
+    end
+
+  end
+
+  def rect
+    @rect = `#{canvas}.getBoundingClientRect();`
   end
 
   def draw_canvas
     `#{canvas}.width  = #{width}`
     `#{canvas}.height = #{height}`
 
-
-    #x = 0.5
-    #until x >= width do
-    #  `#{context}.moveTo(#{x}, 0)`
-    #  `#{context}.lineTo(#{x}, #{height})`
-    #  x += CELL_WIDTH
-    #end
-
-    #y = 0.5
-    #until y >= height do
-    #  `#{context}.moveTo(0, #{y})`
-    #  `#{context}.lineTo(#{width}, #{y})`
-    #  y += CELL_HEIGHT
-    #end
-    # `#{context}.strokeStyle = "#eee"`
-    # `#{context}.stroke()`
-
     `#{context}.fillStyle = "#fff"`
-    `#{context}.font = "20pt Arial"`
-    `#{context}.fillText('Map of the Inner Sphere Circa 3025', #{30}, #{30})`
     `#{context}.font = "10pt Arial"`
-
+    draw_planets
   end
 
   def canvas_id
     'mapCanvas'
   end
 
-  def draw_planet(name,x,y, faction)
-    #x = (x *= CELL_WIDTH / 2) + @height / 2;
-    #y = (y *= CELL_HEIGHT / 2) * -1.0 + @width / 2;
-    x = x + @height / 2;
-    y = y * -1.0 + @width / 2;
-    if ["Tharkad", "Terra", "New Avalon", "Luthien", "Atreus (FWL)", "Sian", "Strana Mechty"].include?(name)
-      `#{context}.fillStyle = "#fff"`
-      `#{context}.fillText(#{name}, #{x.floor+5}, #{y.floor+6})`
+  def draw_planets
+    `#{context}.clearRect(0,0, #{canvas}.width, #{canvas}.height)`
+    SYSTEMS.each do |p|
+      draw_planet(p[0], p[1], p[2], p[3])
     end
+  end
 
-    if faction[0..1] == "DC"
-      `#{context}.fillStyle = "#f00"`
-    elsif faction[0..1] == "FS"
-      `#{context}.fillStyle = "#ffff00"`
-    elsif faction[0..1] == "LC"
-      `#{context}.fillStyle = "#2e64fe"`
-    elsif faction[0..1] == "CC"
-      `#{context}.fillStyle = "#01df3a"`
-    elsif faction[0..2] == "FWL"
-      `#{context}.fillStyle = "#a901db"`
-    else
-      `#{context}.fillStyle = "#fff"`
+  def draw_planet(name, system_x, system_y, faction)
+    system_x = (system_x + x)
+    system_y = (system_y + y) * -1.0
+
+    if system_x > 0 && system_x < @width && system_y > 0 && system_y < @height #Only if the systems are in the viewport
+      if ["Tharkad", "Terra", "New Avalon", "Luthien", "Atreus (FWL)", "Sian", "Strana Mechty"].include?(name)
+        `#{context}.fillStyle = "#fff"`
+        `#{context}.fillText(#{name}, #{system_x.floor+5}, #{system_y.floor+6})`
+      end
+
+      if faction[0..1] == "DC"
+        `#{context}.fillStyle = "#f00"`
+      elsif faction[0..1] == "FS"
+        `#{context}.fillStyle = "#ffff00"`
+      elsif faction[0..1] == "LC"
+        `#{context}.fillStyle = "#2e64fe"`
+      elsif faction[0..1] == "CC"
+        `#{context}.fillStyle = "#01df3a"`
+      elsif faction[0..2] == "FWL"
+        `#{context}.fillStyle = "#a901db"`
+      else
+        `#{context}.fillStyle = "#fff"`
+      end
+      `#{context}.fillRect(#{system_x.floor+1}, #{system_y.floor+1}, 1, 1)`
     end
-    `#{context}.fillRect(#{x.floor+1}, #{y.floor+1}, #{CELL_WIDTH-1}, #{CELL_HEIGHT-1})`
   end
 
 end
 
-grid = Grid.new
-grid.draw_canvas
-SYSTEMS.each do |p|
-  grid.draw_planet(p[0], p[1], p[2], p[3])
-end
+map = Map.new
+map.draw_canvas
