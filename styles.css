@@ -1,0 +1,13 @@
+* {
+  margin: 0;
+  padding: 0;
+}
+
+#mapCanvas {
+  margin-top: 20px;
+  margin-left: auto;
+  margin-right: auto;
+  background-color: #000;
+  display: block;
+};
+
